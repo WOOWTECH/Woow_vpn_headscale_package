@@ -166,8 +166,14 @@ Woow_vpn_headscale_package/
 │       ├── 12-proxy-preauth-key.yaml
 │       ├── 13-tailscale-proxy.yaml   # RBAC + proxy Deployment (nginx example)
 │       └── 22-vpn-proxy-ha-odoo.yaml # HA + Odoo proxies
+├── podman/                        # Single-node rootless Podman variant (no K8s)
+│   ├── podman-compose.yml            # headscale + headplane services
+│   ├── deploy.sh                     # one-shot automation (keys, health checks)
+│   ├── .env.example
+│   ├── README.md                     # Podman-specific guide
+│   └── config/                       # headscale + headplane configs
 ├── scripts/
-│   ├── deploy.sh                  # One-shot Phase 1-4 deployment
+│   ├── deploy.sh                  # One-shot Phase 1-4 deployment (K8s)
 │   └── add-service-to-vpn.sh      # Add any Service to the tailnet
 └── docs/
     ├── DEPLOYMENT-REPORT.md       # Full deployment log with every issue + fix
@@ -186,13 +192,28 @@ Woow_vpn_headscale_package/
 - Helm ≥ 3.8 (OCI registry support)
 - `kubectl` access with cluster-admin
 
-### Quick Start
+### Quick Start (Kubernetes)
 
 ```bash
 git clone https://github.com/WOOWTECH/Woow_vpn_headscale_package.git
 cd Woow_vpn_headscale_package
 ./scripts/deploy.sh
 ```
+
+### Quick Start (Podman — single node, no K8s)
+
+Verified on rootless Podman 4.9.3 + podman-compose 1.0.6:
+
+```bash
+cd podman
+cp .env.example .env      # optionally set SERVER_URL
+./deploy.sh
+# Headscale: http://localhost:28080 · Headplane: http://localhost:23000/admin
+```
+
+See [`podman/README.md`](podman/README.md) for details, systemd boot persistence, and Podman-specific gotchas.
+
+<p align="center"><img src="docs/screenshots/podman_headplane_machines.png" alt="Podman Headplane" width="820"/></p>
 
 ### Manual Steps
 

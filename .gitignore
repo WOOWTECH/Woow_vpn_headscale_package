@@ -9,3 +9,8 @@ secrets/
 *.swp
 .idea/
 .vscode/
+
+# Podman runtime-generated secrets
+podman/config/headplane/cookie-secret
+podman/config/headplane/api-key
+podman/.env

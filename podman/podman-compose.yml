@@ -1,0 +1,57 @@
+# =============================================================
+# WoowTech Headscale VPN — Podman Compose (Pod Mode)
+# =============================================================
+# Headscale (control plane) + Headplane (web admin UI) share
+# localhost inside one Podman pod.
+#
+# Usage:
+#   ./deploy.sh              # one-shot: configs, keys, start, verify
+# or manually:
+#   podman-compose up -d headscale
+#   # ...create user + apikey (see deploy.sh)...
+#   podman-compose up -d headplane
+#
+# Ports:
+#   28080 — Headscale control plane (HTTP; front with TLS for prod)
+#   23000 — Headplane admin UI  (/admin)
+#   29090 — Headscale metrics
+# =============================================================
+
+x-podman:
+  in_pod: true
+
+services:
+  headscale:
+    image: docker.io/headscale/headscale:v0.29.2
+    container_name: headscale
+    command: ["serve"]
+    ports:
+      - "28080:8080"
+      - "29090:9090"
+    restart: unless-stopped
+    volumes:
+      - ./config/headscale:/etc/headscale:ro
+      - headscale-data:/var/lib/headscale
+      - headscale-run:/var/run/headscale
+    healthcheck:
+      test: ["CMD", "headscale", "health"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+
+  headplane:
+    image: ghcr.io/tale/headplane:0.7.0
+    container_name: headplane
+    ports:
+      - "23000:3000"
+    restart: unless-stopped
+    volumes:
+      - ./config/headplane:/etc/headplane:ro
+      - headplane-data:/var/lib/headplane
+    depends_on:
+      - headscale
+
+volumes:
+  headscale-data:
+  headscale-run:
+  headplane-data:

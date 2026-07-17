@@ -166,8 +166,14 @@ Woow_vpn_headscale_package/
 │       ├── 12-proxy-preauth-key.yaml
 │       ├── 13-tailscale-proxy.yaml   # RBAC + proxy Deployment（nginx 範例）
 │       └── 22-vpn-proxy-ha-odoo.yaml # HA + Odoo proxies
+├── podman/                        # 單機 rootless Podman 版（不需 K8s）
+│   ├── podman-compose.yml            # headscale + headplane 服務
+│   ├── deploy.sh                     # 一鍵自動化（金鑰、健康檢查）
+│   ├── .env.example
+│   ├── README.md                     # Podman 專屬指南
+│   └── config/                       # headscale + headplane 設定
 ├── scripts/
-│   ├── deploy.sh                  # Phase 1-4 一鍵部署
+│   ├── deploy.sh                  # Phase 1-4 一鍵部署（K8s）
 │   └── add-service-to-vpn.sh      # 把任意 Service 加入 tailnet
 └── docs/
     ├── DEPLOYMENT-REPORT.md       # 完整部署紀錄（所有問題 + 解法）
@@ -186,13 +192,28 @@ Woow_vpn_headscale_package/
 - Helm ≥ 3.8（支援 OCI registry）
 - cluster-admin 權限的 `kubectl`
 
-### 快速開始
+### 快速開始（Kubernetes）
 
 ```bash
 git clone https://github.com/WOOWTECH/Woow_vpn_headscale_package.git
 cd Woow_vpn_headscale_package
 ./scripts/deploy.sh
 ```
+
+### 快速開始（Podman — 單機、免 K8s）
+
+已在 rootless Podman 4.9.3 + podman-compose 1.0.6 驗證：
+
+```bash
+cd podman
+cp .env.example .env      # 可選：設定 SERVER_URL
+./deploy.sh
+# Headscale: http://localhost:28080 · Headplane: http://localhost:23000/admin
+```
+
+詳細說明、systemd 開機自啟、Podman 專屬地雷見 [`podman/README.md`](podman/README.md)。
+
+<p align="center"><img src="docs/screenshots/podman_headplane_machines.png" alt="Podman Headplane" width="820"/></p>
 
 ### 手動步驟
 
