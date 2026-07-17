@@ -1,0 +1,11 @@
+# Secrets — never commit real keys
+*.key
+*.pem
+.env
+secrets/
+
+# OS / editor
+.DS_Store
+*.swp
+.idea/
+.vscode/

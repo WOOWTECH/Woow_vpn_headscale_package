@@ -1,0 +1,95 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: tailscale-proxy
+  namespace: tenant-test
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: tailscale-proxy
+  namespace: tenant-test
+rules:
+  - apiGroups: [""]
+    resources: ["secrets"]
+    verbs: ["get", "create", "update", "patch"]
+  - apiGroups: [""]
+    resources: ["events"]
+    verbs: ["get", "create", "patch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: tailscale-proxy
+  namespace: tenant-test
+subjects:
+  - kind: ServiceAccount
+    name: tailscale-proxy
+    namespace: tenant-test
+roleRef:
+  kind: Role
+  name: tailscale-proxy
+  apiGroup: rbac.authorization.k8s.io
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tailscale-proxy-nginx
+  namespace: tenant-test
+  labels:
+    app: tailscale-proxy-nginx
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: tailscale-proxy-nginx
+  template:
+    metadata:
+      labels:
+        app: tailscale-proxy-nginx
+    spec:
+      serviceAccountName: tailscale-proxy
+      containers:
+        - name: tailscale
+          image: tailscale/tailscale:latest
+          env:
+            - name: TS_AUTHKEY
+              valueFrom:
+                secretKeyRef:
+                  name: proxy-nginx-preauth-key
+                  key: key
+            - name: TS_HOSTNAME
+              value: "nginx-test"
+            - name: TS_STATE_DIR
+              value: "/var/lib/tailscale"
+            - name: TS_EXTRA_ARGS
+              value: "--login-server=http://headscale.tenant-test.svc.cluster.local:8080"
+            - name: TS_USERSPACE
+              value: "false"
+            - name: TS_DEST_IP
+              value: "10.43.239.151"
+            - name: TS_KUBE_SECRET
+              value: "tailscale-proxy-state"
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: POD_UID
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.uid
+          securityContext:
+            capabilities:
+              add:
+                - NET_ADMIN
+          volumeMounts:
+            - name: tailscale-state
+              mountPath: /var/lib/tailscale
+            - name: dev-tun
+              mountPath: /dev/net/tun
+      volumes:
+        - name: tailscale-state
+          emptyDir: {}
+        - name: dev-tun
+          hostPath:
+            path: /dev/net/tun

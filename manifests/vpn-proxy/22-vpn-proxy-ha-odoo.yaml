@@ -1,0 +1,154 @@
+## PreAuth Keys
+apiVersion: headscale.infrado.cloud/v1beta1
+kind: HeadscalePreAuthKey
+metadata:
+  name: proxy-ha-key
+  namespace: tenant-test
+spec:
+  headscaleRef: headscale
+  headscaleUserRef: default
+  expiration: "720h"
+  reusable: false
+  ephemeral: true
+  secretName: proxy-ha-preauth-key
+---
+apiVersion: headscale.infrado.cloud/v1beta1
+kind: HeadscalePreAuthKey
+metadata:
+  name: proxy-odoo-key
+  namespace: tenant-test
+spec:
+  headscaleRef: headscale
+  headscaleUserRef: default
+  expiration: "720h"
+  reusable: false
+  ephemeral: true
+  secretName: proxy-odoo-preauth-key
+---
+## HA Tailscale Proxy
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tailscale-proxy-ha
+  namespace: tenant-test
+  labels:
+    app: tailscale-proxy-ha
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: tailscale-proxy-ha
+  template:
+    metadata:
+      labels:
+        app: tailscale-proxy-ha
+    spec:
+      serviceAccountName: tailscale-proxy
+      containers:
+        - name: tailscale
+          image: tailscale/tailscale:latest
+          env:
+            - name: TS_AUTHKEY
+              valueFrom:
+                secretKeyRef:
+                  name: proxy-ha-preauth-key
+                  key: key
+            - name: TS_HOSTNAME
+              value: "homeassistant"
+            - name: TS_STATE_DIR
+              value: "/var/lib/tailscale"
+            - name: TS_EXTRA_ARGS
+              value: "--login-server=http://headscale.tenant-test.svc.cluster.local:8080"
+            - name: TS_USERSPACE
+              value: "false"
+            - name: TS_DEST_IP
+              value: "10.43.179.64"
+            - name: TS_KUBE_SECRET
+              value: "tailscale-proxy-ha-state"
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: POD_UID
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.uid
+          securityContext:
+            capabilities:
+              add:
+                - NET_ADMIN
+          volumeMounts:
+            - name: tailscale-state
+              mountPath: /var/lib/tailscale
+            - name: dev-tun
+              mountPath: /dev/net/tun
+      volumes:
+        - name: tailscale-state
+          emptyDir: {}
+        - name: dev-tun
+          hostPath:
+            path: /dev/net/tun
+---
+## Odoo Tailscale Proxy
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tailscale-proxy-odoo
+  namespace: tenant-test
+  labels:
+    app: tailscale-proxy-odoo
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: tailscale-proxy-odoo
+  template:
+    metadata:
+      labels:
+        app: tailscale-proxy-odoo
+    spec:
+      serviceAccountName: tailscale-proxy
+      containers:
+        - name: tailscale
+          image: tailscale/tailscale:latest
+          env:
+            - name: TS_AUTHKEY
+              valueFrom:
+                secretKeyRef:
+                  name: proxy-odoo-preauth-key
+                  key: key
+            - name: TS_HOSTNAME
+              value: "odoo"
+            - name: TS_STATE_DIR
+              value: "/var/lib/tailscale"
+            - name: TS_EXTRA_ARGS
+              value: "--login-server=http://headscale.tenant-test.svc.cluster.local:8080"
+            - name: TS_USERSPACE
+              value: "false"
+            - name: TS_DEST_IP
+              value: "10.43.215.119"
+            - name: TS_KUBE_SECRET
+              value: "tailscale-proxy-odoo-state"
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: POD_UID
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.uid
+          securityContext:
+            capabilities:
+              add:
+                - NET_ADMIN
+          volumeMounts:
+            - name: tailscale-state
+              mountPath: /var/lib/tailscale
+            - name: dev-tun
+              mountPath: /dev/net/tun
+      volumes:
+        - name: tailscale-state
+          emptyDir: {}
+        - name: dev-tun
+          hostPath:
+            path: /dev/net/tun
