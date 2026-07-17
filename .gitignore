@@ -11,6 +11,6 @@ secrets/
 .vscode/
 
 # Podman runtime-generated secrets
-podman/config/headplane/cookie-secret
-podman/config/headplane/api-key
-podman/.env
+config/headplane/cookie-secret
+config/headplane/api-key
+.env

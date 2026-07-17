@@ -1,9 +1,0 @@
-apiVersion: headscale.infrado.cloud/v1beta1
-kind: HeadscaleUser
-metadata:
-  name: default
-  namespace: tenant-test
-spec:
-  headscaleRef: headscale
-  username: default
-  displayName: "Default User"
